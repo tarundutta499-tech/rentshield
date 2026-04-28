@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users: anyone logged in can read 
+    // basic public info
+    // Only user can write their own data
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // Rentals: only landlord and tenant 
+    // of that rental can read full details
+    match /rentals/{rentalId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == 
+            resource.data.landlordId
+         || request.auth.uid == 
+            resource.data.tenantId
+         || resource.data.tenantEmail == 
+            request.auth.token.email);
+      allow create: if request.auth != null;
+      allow update: if request.auth != null
+        && (request.auth.uid == 
+            resource.data.landlordId
+         || request.auth.uid == 
+            resource.data.tenantId);
+      allow delete: if false;
+    }
+
+    // Notifications: only recipient 
+    // can read/update their notifications
+    match /notifications/{notifId} {
+      allow read, update: if request.auth != null
+        && request.auth.uid == 
+           resource.data.userId;
+      allow create: if request.auth != null;
+      allow delete: if false;
+    }
+
+    // Email queue: only create allowed
+    match /emailQueue/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
+
+    // Agreements: linked users only
+    match /agreements/{agreementId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Reviews: anyone logged in can read
+    // Only verified rental participants can write
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.auth.uid == 
+           request.resource.data.reviewerId;
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "rentshield",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "npm run dev -w apps/api",
+    "build:web": "npm run build -w apps/web",
+    "start:api": "npm run start -w apps/api"
+  },
+  "dependencies": {
+    "20": "^3.1.9",
+    "jspdf": "^4.2.1",
+    "openai": "^6.32.0",
+    "pdf-lib": "^1.17.1"
+  }
+}

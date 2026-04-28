@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myUid() {
+      return request.auth.uid;
+    }
+
+    // Allow read access for authenticated users to their own files
+    match /user_uploads/{uid}/{allPaths=**} {
+      allow read, write: if isSignedIn() && myUid() == uid;
+    }
+    
+    // Allow read access for any authenticated user to download files
+    // This enables the download URLs to work
+    match /user_uploads/{allPaths=**} {
+      allow read: if isSignedIn();
+    }
+  }
+}
+

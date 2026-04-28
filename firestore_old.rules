@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Production mode - allow authenticated users
+    allow read, write: if request.auth != null;
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myUid() {
+      return request.auth.uid;
+    }
+
+    function myEmail() {
+      return request.auth.token.email;
+    }
+
+    function isParticipant(doc) {
+      return isSignedIn()
+        && doc.data.participants[myUid()] == true;
+    }
+
+    // Users profile (basic self-service)
+    match /users/{uid} {
+      allow read: if isSignedIn() && myUid() == uid;
+      allow create: if isSignedIn() && myUid() == uid;
+      allow update: if isSignedIn() && myUid() == uid;
+      allow delete: if false;
+
+      // Legacy per-user subcollections (kept for backward compatibility).
+      // In production, prefer top-level `agreements` + `disputes`.
+      match /{sub=**} {
+        allow read, write: if isSignedIn() && myUid() == uid;
+      }
+    }
+
+    // Shared agreements: simplified access for owners
+    match /agreements/{agreementId} {
+      allow create: if isSignedIn() && request.resource.data.createdByUid == myUid();
+      allow read: if isSignedIn() && (resource.data.createdByUid == myUid() || resource.data.userId == myUid());
+      allow update: if isSignedIn() && (resource.data.createdByUid == myUid() || resource.data.userId == myUid());
+      allow delete: if isSignedIn(); // Allow any authenticated user to delete
+    }
+
+    // Shared disputes: only participants can read/write.
+    match /disputes/{disputeId} {
+      allow create: if isSignedIn()
+        && request.resource.data.participants[myUid()] == true
+        && request.resource.data.createdByUid == myUid();
+      allow read: if isParticipant(resource);
+      allow update: if isParticipant(resource);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow create: if isSignedIn()
+          && exists(/databases/$(database)/documents/disputes/$(disputeId))
+          && get(/databases/$(database)/documents/disputes/$(disputeId)).data.participants[myUid()] == true
+          && request.resource.data.fromUid == myUid();
+        allow read: if isSignedIn()
+          && exists(/databases/$(database)/documents/disputes/$(disputeId))
+          && get(/databases/$(database)/documents/disputes/$(disputeId)).data.participants[myUid()] == true;
+        allow update, delete: if false;
+      }
+    }
+
+    // Invites: target can read/accept, inviter can read.
+    match /invites/{inviteId} {
+      allow create: if isSignedIn()
+        && request.resource.data.invitedByUid == myUid();
+      allow read: if isSignedIn()
+        && (resource.data.invitedByUid == myUid()
+            || (myEmail() != null && resource.data.targetEmail == myEmail()));
+      allow update: if isSignedIn()
+        && (myEmail() != null && resource.data.targetEmail == myEmail());
+      allow delete: if isSignedIn()
+        && (resource.data.invitedByUid == myUid()
+            || (myEmail() != null && resource.data.targetEmail == myEmail()));
+    }
+  }
+}
+

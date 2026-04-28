@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RentShield</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- jsPDF CDN for PDF generation -->
+    <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <!-- pdf-lib CDN for PDF merging -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script>
+      // Global alert override to catch ALL alerts
+      const originalAlert = window.alert;
+      window.alert = function(message) {
+        console.error('🚨 GLOBAL ALERT OVERRIDE');
+        console.error('🚨 ALERT MESSAGE:', message);
+        console.error('🚨 CALL STACK:', new Error().stack);
+        // Don't show alert - just log it
+        return;
+      };
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Global reCAPTCHA container for Firebase Phone Auth -->
+    <div id="recaptcha-container" style="display: none;"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
