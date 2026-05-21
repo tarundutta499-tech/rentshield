@@ -26,7 +26,6 @@ import {
   DescriptionOutlined,
   ArrowForwardOutlined
 } from '@mui/icons-material';
-import RoadmapSection from '../components/RoadmapSection.jsx';
 
 // useInView hook for scroll animations
 function useInView(threshold = 0.1) {
@@ -271,17 +270,27 @@ export default function HomePage() {
                   }}
                 >
                   <Fade in={heroVisible} timeout={500}>
-                    <Box component="div" sx={{ display: 'block' }}>
+                    <Box component="span" sx={{ 
+                      display: 'block',
+                      animation: heroVisible ? 'slideUp 0.6s ease-out 0.1s both' : 'none'
+                    }}>
                       Rent Smarter.
                     </Box>
                   </Fade>
                   <Fade in={heroVisible} timeout={700}>
-                    <Box component="div" sx={{ display: 'block', color: '#00D4B8' }}>
+                    <Box component="span" sx={{ 
+                      display: 'block',
+                      color: '#00D4B8',
+                      animation: heroVisible ? 'slideUp 0.6s ease-out 0.3s both' : 'none'
+                    }}>
                       Trust Deeper.
                     </Box>
                   </Fade>
                   <Fade in={heroVisible} timeout={900}>
-                    <Box component="div" sx={{ display: 'block' }}>
+                    <Box component="span" sx={{ 
+                      display: 'block',
+                      animation: heroVisible ? 'slideUp 0.6s ease-out 0.5s both' : 'none'
+                    }}>
                       Stay Protected.
                     </Box>
                   </Fade>
@@ -748,7 +757,7 @@ export default function HomePage() {
                     mb: 2
                   }}
                 >
-                  Ready to rent without risk?
+                  Ready to rent without the risk?
                 </Typography>
 
                 <Typography
@@ -831,8 +840,6 @@ export default function HomePage() {
           </Typography>
         </Container>
       </Box>
-
-      <RoadmapSection />
     </>
   );
 }

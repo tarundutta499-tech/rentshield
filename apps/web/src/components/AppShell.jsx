@@ -22,7 +22,6 @@ import { NotificationBell } from "./NotificationBell.jsx";
 const navItems = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
-  { label: "How it works", to: "/how-it-works" },
       { label: "Upload", to: "/upload", authOnly: true },
   { label: "Legal notices", to: "/legal-notice", authOnly: true },
   { label: "Dashboard", to: "/dashboard", authOnly: true }
@@ -74,7 +73,8 @@ export function AppShell() {
                 <Button
                   key={item.to}
                   color={location.pathname === item.to ? "primary" : "inherit"}
-                  onClick={() => navigate(item.to)}
+                  component={Link}
+                  to={item.to}
                   sx={{ fontWeight: 600 }}
                 >
                   {item.label}

@@ -66,7 +66,14 @@ export function UploadAgreementPage() {
         throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const text = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      throw new Error("Server returned invalid response: " + text);
+    }
       console.log("OpenAI Response Data:", data);
       
       const content = data.choices[0].message.content;

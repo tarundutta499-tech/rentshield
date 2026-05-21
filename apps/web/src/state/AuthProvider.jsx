@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useRef,
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase.js";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
@@ -12,6 +13,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   
   // Use useRef for timer to persist across re-renders
   const logoutTimerRef = useRef(null);
@@ -49,11 +51,18 @@ export function AuthProvider({ children }) {
       activityTimerRef.current = null;
     }
     
-    logoutTimerRef.current = setTimeout(() => {
+    logoutTimerRef.current = setTimeout(async () => {
       console.log("Auto-logout: 7 minutes of inactivity reached");
-      signOut(auth);
+      try {
+        await firebaseSignOut(auth);
+        console.log("Auto-logout successful");
+        // Redirect to home page after auto-logout
+        navigate("/");
+      } catch (error) {
+        console.error("Auto-logout error:", error);
+      }
     }, AUTO_LOGOUT_TIME);
-  }, []);
+  }, [navigate]);
 
   const handleUserActivity = useCallback(() => {
     if (user) {
@@ -64,7 +73,9 @@ export function AuthProvider({ children }) {
 
   // Auth state listener
   useEffect(() => {
+    console.log('[AuthProvider] Setting up auth state listener');
     const unsub = onAuthStateChanged(auth, async (u) => {
+      console.log('[AuthProvider] Auth state changed:', u?.uid);
       setUser(u || null);
       setLoading(true);
       try {
@@ -75,6 +86,7 @@ export function AuthProvider({ children }) {
           return;
         }
         const p = await ensureUserDoc(u);
+        console.log('[AuthProvider] Profile loaded:', p);
         setProfile(p);
         
         // Start auto-logout timer when user signs in
@@ -83,7 +95,10 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     });
-    return () => unsub();
+    return () => {
+      console.log('[AuthProvider] Cleaning up auth state listener');
+      unsub();
+    };
   }, []);
 
   // Global activity tracking with proper cleanup
@@ -114,9 +129,9 @@ export function AuthProvider({ children }) {
         clearTimeout(logoutTimerRef.current);
         logoutTimerRef.current = null;
       }
-      if (handleActivityRef.current) {
-        clearTimeout(handleActivityRef.current);
-        handleActivityRef.current = null;
+      if (activityTimerRef.current) {
+        clearTimeout(activityTimerRef.current);
+        activityTimerRef.current = null;
       }
     };
   }, [user, handleUserActivity]);
@@ -127,18 +142,21 @@ export function AuthProvider({ children }) {
       profile,
       loading,
       isEmailVerified: Boolean(user?.email ? user.emailVerified : true),
+      profileCompleted: Boolean(profile?.profileCompleted),
       signOut: async () => {
-      try {
-        console.log("Logging out...");
-        await firebaseSignOut(auth);
-        console.log("Logged out successfully");
-      } catch (error) {
-        console.error("Logout error:", error);
-      }
-    },
+        try {
+          console.log("Logging out...");
+          await firebaseSignOut(auth);
+          console.log("Logged out successfully");
+          // Redirect to home page after logout
+          navigate("/");
+        } catch (error) {
+          console.error("Logout error:", error);
+        }
+      },
       handleUserActivity
     }),
-    [user, profile, loading, handleUserActivity]
+    [user, profile, loading, handleUserActivity, navigate]
   );
 
   return (

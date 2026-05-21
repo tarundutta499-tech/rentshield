@@ -15,7 +15,14 @@ export async function generateLandlordLetter({ category, summary, details }) {
       }
     );
 
-    const data = await response.json();
+    const text = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      throw new Error("Server returned invalid response: " + text);
+    }
 
     if (!data.success) {
       throw new Error(data.error || "Failed to generate letter");

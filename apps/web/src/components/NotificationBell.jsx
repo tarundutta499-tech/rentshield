@@ -32,30 +32,102 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
-    // Listen to notifications collection in realtime
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(20)
-    );
-    
-    const unsubscribe = onSnapshot(q, snapshot => {
-        const notifs = snapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-        setNotifications(notifs);
-      }, error => {
-        console.error("Error listening to notifications:", error);
-      });
+    setLoading(true);
+    let unsubscribe = null;
 
-    return () => unsubscribe();
+    const setupNotificationListener = async () => {
+      try {
+        // Try the main query with orderBy first
+        const q = query(
+          collection(db, 'notifications'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc'),
+          limit(20)
+        );
+        
+        unsubscribe = onSnapshot(q, snapshot => {
+          const notifs = snapshot.docs
+            .map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+          setNotifications(notifs);
+          setLoading(false);
+        }, error => {
+          console.error("Notification error:", error.message);
+          
+          // Check if it's an index error
+          if (error.message && error.message.includes('requires an index')) {
+            console.log("Falling back to simple query without orderBy");
+            fallbackQuery();
+          } else {
+            console.error("Error listening to notifications:", error);
+            setLoading(false);
+          }
+        });
+      } catch (error) {
+        console.error("Notification error:", error.message);
+        
+        // If setup fails, try fallback
+        if (error.message && error.message.includes('requires an index')) {
+          console.log("Falling back to simple query without orderBy");
+          fallbackQuery();
+        } else {
+          console.error("Error setting up notification listener:", error);
+          setLoading(false);
+        }
+      }
+    };
+
+    const fallbackQuery = () => {
+      try {
+        // Fallback query without orderBy
+        const fallbackQ = query(
+          collection(db, 'notifications'),
+          where('userId', '==', user.uid),
+          limit(20)
+        );
+        
+        unsubscribe = onSnapshot(fallbackQ, snapshot => {
+          const notifs = snapshot.docs
+            .map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+          
+          // Manual sorting if createdAt is available
+          const sortedNotifs = notifs.sort((a, b) => {
+            const aTime = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
+            const bTime = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
+            return bTime - aTime; // Descending order
+          });
+          
+          setNotifications(sortedNotifs);
+          setLoading(false);
+        }, error => {
+          console.error("Fallback query error:", error.message);
+          setLoading(false);
+          setNotifications([]); // Set empty array on error
+        });
+      } catch (fallbackError) {
+        console.error("Fallback query setup error:", fallbackError.message);
+        setLoading(false);
+        setNotifications([]); // Set empty array on error
+      }
+    };
+
+    setupNotificationListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [user]);
 
   const markRead = async (notifId) => {

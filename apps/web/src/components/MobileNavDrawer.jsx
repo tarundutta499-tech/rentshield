@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   Box,
   Button,
@@ -30,7 +31,7 @@ export function MobileNavDrawer({ open, onClose, items, user, onNavigate, onSign
         <List dense>
           {items.map((item) => (
             <ListItem key={item.to} disablePadding>
-              <ListItemButton onClick={() => onNavigate(item.to)}>
+              <ListItemButton component={Link} to={item.to} onClick={() => onClose()}>
                 <ListItemText primary={item.label} />
               </ListItemButton>
             </ListItem>

@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "rental-shield-a4638"
-  }
+    "default": "rental-shield-a4638",
+    "Prod": "rental-shield-a4638"
+  },
+  "targets": {},
+  "etags": {}
 }

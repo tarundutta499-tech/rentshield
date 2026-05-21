@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthProvider.jsx'
-import { db } from '../lib/firebase.js';
+import { db, auth } from '../lib/firebase.js';
 // jsPDF will be imported dynamically in generatePDF function
 // pdf-lib will be imported dynamically in merge function
 import {
